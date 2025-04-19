@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer with Date and Time</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            height: 100vh;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #f5f5dc, #fff); /* Cream color gradient */
+        }
+
+        .left {
+            flex: 1;
+            background-image: url('https://images.unsplash.com/photo-1572239781802-22719c286e52?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .date-time {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-size: 24px; /* Increased font size */
+        }
+
+        .right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer {
+            text-align: center;
+        }
+
+        input[type="number"] {
+            padding: 15px; /* Increased padding */
+            width: 200px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px; /* Increased margin */
+            font-size: 20px; /* Increased font size */
+        }
+
+        .box {
+            display: inline-block;
+            width: 70px; /* Adjusted width */
+            height: 70px; /* Adjusted height */
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            margin: 5px;
+            font-size: 32px; /* Increased font size */
+            font-weight: bold;
+            line-height: 70px; /* Center text vertically */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .box:before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background-color: #a8d23b; /* Modern yellowish-green */
+            border-radius: 8px;
+            z-index: -1;
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 15px 25px; /* Increased padding */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 20px; /* Increased font size */
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .start {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pause {
+            background-color: #FFC107;
+            color: white;
+        }
+
+        .end {
+            background-color: #F44336;
+            color: white;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .countdown {
+            animation: fadeIn 1s ease-in;
+            font-size: 32px;
+            color: #FFC107;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="left">
+        <div class="date-time">
+            <div id="currentDateTime"></div>
+        </div>
+    </div>
+
+    <div class="right">
+        <div class="timer">
+            <h2 style="font-size: 36px;"> </h2>
+            <input type="number" id="inputMinutes" placeholder=" " min="0" step="0.01">
+            <div>
+                <div class="box" id="hours">00</div>
+                <div class="box" id="minutes">00</div>
+                <div class="box" id="seconds">00</div>
+            </div>
+            <button class="start" onclick="startTimer()">Start</button>
+            <button class="pause hidden" onclick="pauseTimer()">Pause</button>
+            <button class="end hidden" onclick="endTimer()">End</button>
+        </div>
+    </div>
+
+    <audio id="chime" src="chime.mp3"></audio>
+
+    <script>
+        let countdownTimer;
+        let totalSeconds = 0;
+        let isPaused = false;
+
+        function updateCurrentDateTime() {
+            const now = new Date();
+            const date = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+            document.getElementById('currentDateTime').innerHTML = `${date}<br>${time}`;
+        }
+
+        function startTimer() {
+            const minutes = parseFloat(document.getElementById('inputMinutes').value);
+            if (!isNaN(minutes) && minutes > 0) {
+                totalSeconds = Math.floor(minutes * 60);
+                updateCountdownDisplay();
+                document.querySelector('.start').classList.add('hidden');
+                document.querySelector('.pause').classList.remove('hidden');
+                document.querySelector('.end').classList.remove('hidden');
+                countdownTimer = setInterval(countdown, 1000);
+            }
+        }
+
+        function countdown() {
+            if (totalSeconds > 0 && !isPaused) {
+                totalSeconds--;
+                updateCountdownDisplay();
+            } else if (totalSeconds === 0) {
+                clearInterval(countdownTimer);
+                document.getElementById('chime').play();
+                document.querySelector('.start').classList.remove('hidden');
+                document.querySelector('.pause').classList.add('hidden');
+                document.querySelector('.end').classList.add('hidden');
+            }
+        }
+
+        function pauseTimer() {
+            isPaused = !isPaused;
+            document.querySelector('.pause').innerHTML = isPaused ? 'Resume' : 'Pause';
+        }
+
+        function endTimer() {
+            clearInterval(countdownTimer);
+            totalSeconds = 0;
+            updateCountdownDisplay();
+            document.querySelector('.start').classList.remove('hidden');
+            document.querySelector('.pause').classList.add('hidden');
+            document.querySelector('.end').classList.add('hidden');
+        }
+
+        function updateCountdownDisplay() {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+        }
+
+        setInterval(updateCurrentDateTime, 1000);
+    </script>
+</body>
+</html>
