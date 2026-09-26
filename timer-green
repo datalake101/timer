@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ember — Countdown</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  /* olive theme */
+  --olive:#4a5d3a;
+  --olive-light:#6b7f5c;
+  --olive-dark:#2f3d25;
+  --cream:#f4f0e8;
+  --cream-dim:rgba(244,240,232,.6);
+  --sage:#8b9a7c;
+  --sage-soft:rgba(139,154,124,.25);
+  --gold:#c9a961;
+  --line:rgba(244,240,232,.16);
+  --serif:'Bodoni Moda','Didot','Bodoni MT','Playfair Display',Georgia,serif;
+  --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:var(--sans);color:var(--cream);background:var(--olive-dark);overflow:hidden;}
+
+.split{display:flex;height:100vh;height:100dvh;}
+
+/* ═══════ LEFT · scene ═══════ */
+.scene{position:relative;flex:0 0 46%;overflow:hidden;background:#2f3d25;}
+.scene .img{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(180deg,rgba(47,61,37,.15),rgba(47,61,37,.55)),
+    url('https://images.unsplash.com/photo-1789414848828-8ee488478b29?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+  background-size:cover;background-position:center;
+  animation:kenburns 46s ease-in-out infinite alternate;
+}
+@keyframes kenburns{from{transform:scale(1);}to{transform:scale(1.09);}}
+.scene::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(200deg,rgba(47,61,37,.05) 30%,rgba(47,61,37,.55));}
+
+.clock{position:absolute;left:8%;bottom:9%;z-index:3;animation:rise .9s .15s cubic-bezier(.2,.7,.3,1) both;}
+.clock-time{
+  font-family:'Cormorant Garamond',var(--serif);font-weight:300;
+  font-size:clamp(3.4rem,6.5vw,6rem);letter-spacing:.01em;line-height:1;
+  color:var(--cream);text-shadow:0 2px 30px rgba(0,0,0,.35);font-variant-numeric:tabular-nums;
+}
+.clock-time .secs{font-size:.42em;color:var(--gold);font-family:var(--sans);font-weight:300;margin-left:.18em;}
+.clock-date{margin-top:.9rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:clamp(.95rem,1.3vw,1.2rem);color:var(--cream-dim);letter-spacing:.04em;}
+.clock-season{margin-top:.5rem;display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.68rem;letter-spacing:.32em;text-transform:uppercase;color:var(--sage);}
+.clock-season::before{content:'';width:26px;height:1px;background:var(--sage);opacity:.7;}
+
+.leaf{position:absolute;top:-8%;z-index:2;pointer-events:none;animation:fall var(--d) linear var(--delay) infinite;opacity:var(--o);}
+.leaf svg{width:var(--size);height:var(--size);display:block;animation:sway var(--s) ease-in-out infinite alternate;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+@keyframes fall{to{transform:translateY(118vh);}}
+@keyframes sway{from{transform:translateX(-24px) rotate(-38deg);}to{transform:translateX(24px) rotate(38deg);}}
+
+/* ═══════ RIGHT · timer (olive theme) ═══════ */
+.timer-pane{
+  flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#5a6d4a 0%,#4a5d3a 100%);
+  overflow:hidden;
+}
+.timer-pane::before{
+  content:'';position:absolute;left:50%;top:44%;width:52vmin;height:52vmin;transform:translate(-50%,-50%);
+  background:radial-gradient(circle,var(--sage-soft) 0%,transparent 68%);opacity:.6;transition:opacity 1.2s;pointer-events:none;
+}
+.timer-pane.running::before{opacity:.9;}
+
+.timer-label{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:var(--cream-dim);
+  margin-bottom:2.4rem;animation:rise .8s .25s cubic-bezier(.2,.7,.3,1) both;transition:color .6s;}
+.timer-pane.done .timer-label{color:var(--gold);}
+
+/* ── Bodoni digits with FADE transition ── */
+.timer-display{
+  display:flex;align-items:flex-end;justify-content:center;
+  font-family:var(--serif);font-optical-sizing:auto;font-weight:500;
+  font-size:clamp(4.6rem,11vw,9rem);line-height:1;color:var(--cream);
+  user-select:none;animation:rise .8s .35s cubic-bezier(.2,.7,.3,1) both;
+  transition:color .8s,text-shadow .8s,font-size .5s;
+}
+.timer-display.has-hours{font-size:clamp(2.6rem,6.8vw,5.6rem);}
+.timer-pane.running .timer-display{text-shadow:0 0 44px var(--sage-soft);}
+.timer-pane.done .timer-display{color:var(--gold);text-shadow:0 0 46px var(--sage-soft);opacity:.16;filter:blur(1px);}
+
+.cell{position:relative;width:.62em;height:1em;overflow:hidden;}
+.face{
+  position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;line-height:1;
+  transition:opacity .55s ease-in-out;will-change:opacity;
+}
+.face.on{opacity:1;}
+.face.off{opacity:0;}
+.colon{width:.42em;text-align:center;color:var(--sage);font-weight:400;transform:translateY(.02em);}
+.timer-pane.running .colon{animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.95;}50%{opacity:.18;}}
+
+/* ── presets ── */
+.presets{display:flex;gap:.4rem;margin-top:3rem;animation:rise .8s .45s cubic-bezier(.2,.7,.3,1) both;}
+.preset{background:transparent;border:1px solid var(--line);color:var(--cream-dim);font-family:inherit;
+  padding:.5rem 1.05rem;border-radius:99px;font-size:.8rem;letter-spacing:.04em;cursor:pointer;
+  transition:all .3s;font-variant-numeric:tabular-nums;}
+.preset:hover{border-color:var(--sage);color:var(--cream);}
+.preset.active{background:var(--sage);border-color:var(--sage);color:#2f3d25;}
+
+/* ── custom time ── */
+.custom{display:flex;align-items:center;gap:1rem;margin-top:1.1rem;animation:rise .8s .5s cubic-bezier(.2,.7,.3,1) both;}
+.custom-inputs{display:flex;align-items:center;gap:.4rem;overflow:hidden;max-width:0;opacity:0;
+  transition:max-width .55s cubic-bezier(.2,.7,.3,1),opacity .4s;}
+.custom.open .custom-inputs{max-width:420px;opacity:1;}
+.custom-inputs input{
+  width:2.6em;background:transparent;border:none;border-bottom:1px solid var(--line);
+  color:var(--cream);font-family:var(--serif);font-size:1.25rem;text-align:center;
+  padding:.3rem 0;outline:none;font-variant-numeric:tabular-nums;transition:border-color .3s;
+}
+.custom-inputs input:focus{border-color:var(--sage);}
+.csep{color:var(--cream-dim);font-size:.72rem;letter-spacing:.06em;}
+.custom-apply{background:var(--sage);border:none;color:#2f3d25;font-family:inherit;font-weight:600;
+  font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;padding:.5rem 1.1rem;border-radius:99px;
+  cursor:pointer;transition:all .3s;margin-left:.2rem;}
+.custom-apply:hover{background:var(--cream);}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+
+/* ── controls ── */
+.controls{display:flex;align-items:center;gap:2.6rem;margin-top:2.4rem;
+  animation:rise .8s .55s cubic-bezier(.2,.7,.3,1) both;transition:opacity .6s;}
+.timer-pane.running .controls,
+.timer-pane.running .presets,
+.timer-pane.running .custom{opacity:.22;}
+.timer-pane.running .controls:hover,
+.timer-pane.running .presets:hover,
+.timer-pane.running .custom:hover{opacity:1;}
+
+.btn-main{background:var(--cream);color:#2f3d25;border:none;font-family:inherit;font-weight:600;
+  font-size:.85rem;letter-spacing:.22em;text-transform:uppercase;padding:.95rem 2.6rem;border-radius:99px;
+  cursor:pointer;transition:all .3s;min-width:150px;}
+.btn-main:hover{background:var(--sage);transform:translateY(-2px);box-shadow:0 10px 26px var(--sage-soft);}
+.btn-main:active{transform:translateY(0);}
+.btn-ghost{background:none;border:none;color:var(--cream-dim);font-family:inherit;font-size:.78rem;
+  letter-spacing:.18em;text-transform:uppercase;cursor:pointer;position:relative;padding:.4rem 0;transition:color .3s;}
+.btn-ghost::after{content:'';position:absolute;left:0;bottom:0;height:1px;width:0;background:var(--sage);transition:width .35s;}
+.btn-ghost:hover{color:var(--cream);}
+.btn-ghost:hover::after{width:100%;}
+
+.progress{position:absolute;left:0;bottom:0;height:2px;width:100%;background:rgba(244,240,232,.06);}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--olive-light),var(--sage));
+  box-shadow:0 0 12px var(--sage-soft);transition:width 1s linear;}
+
+.hint{position:absolute;bottom:1.1rem;left:50%;transform:translateX(-50%);
+  font-size:.66rem;letter-spacing:.14em;color:rgba(244,240,232,.32);white-space:nowrap;}
+
+.done-msg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;
+  font-size:clamp(1.4rem,2.4vw,2rem);color:var(--gold);opacity:0;pointer-events:none;
+  transition:opacity .8s .3s;text-align:center;}
+.timer-pane.done .done-msg{opacity:1;}
+
+@keyframes rise{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+@media (max-width:820px){
+  .split{flex-direction:column;}
+  .scene{flex:0 0 36vh;}
+  .clock{left:7%;bottom:10%;}
+  .clock-time{font-size:clamp(2.6rem,9vw,3.4rem);}
+  .timer-display{font-size:clamp(3.6rem,14vw,5.2rem);}
+  .timer-display.has-hours{font-size:clamp(2.2rem,9vw,3.4rem);}
+  .hint{display:none;}
+}
+</style>
+</head>
+<body>
+<main class="split">
+
+  <section class="scene" aria-hidden="true">
+    <div class="img"></div>
+    <div id="leaves"></div>
+    <div class="clock">
+      <div class="clock-time"><span id="clockHM">09:41</span><span class="secs" id="clockS">00</span></div>
+      <div class="clock-date" id="clockDate">Tuesday, October 14</div>
+      <div class="clock-season">Autumn</div>
+    </div>
+  </section>
+
+  <section class="timer-pane" id="pane">
+    <div class="timer-label" id="label">Countdown</div>
+
+    <div class="timer-display" id="display" title="Scroll to adjust minutes"></div>
+
+    <div class="done-msg">Time&rsquo;s up.<br><span style="font-size:.55em;letter-spacing:.1em;opacity:.8;">take a breath</span></div>
+
+    <div class="presets" id="presets">
+      <button class="preset" data-min="1">1m</button>
+      <button class="preset" data-min="5">5m</button>
+      <button class="preset" data-min="10">10m</button>
+      <button class="preset active" data-min="25">25m</button>
+      <button class="preset" data-min="45">45m</button>
+      <button class="preset" data-min="60">60m</button>
+    </div>
+
+    <div class="custom" id="customRow">
+      <button class="preset" id="customToggle">Custom</button>
+      <div class="custom-inputs" id="customInputs">
+        <input type="number" id="ch" min="0" max="99" placeholder="0" aria-label="hours">
+        <span class="csep">h</span>
+        <input type="number" id="cm" min="0" max="59" placeholder="0" aria-label="minutes">
+        <span class="csep">m</span>
+        <input type="number" id="cs" min="0" max="59" placeholder="0" aria-label="seconds">
+        <span class="csep">s</span>
+        <button class="custom-apply" id="customApply">Set</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-ghost" id="resetBtn">Reset</button>
+      <button class="btn-main" id="startBtn">Start</button>
+    </div>
+
+    <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="hint">space · start &nbsp;&nbsp; r · reset &nbsp;&nbsp; scroll / ↑↓ · minutes</div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+'use strict';
+
+const pane      = document.getElementById('pane');
+const label     = document.getElementById('label');
+const startBtn  = document.getElementById('startBtn');
+const resetBtn  = document.getElementById('resetBtn');
+const fill      = document.getElementById('progressFill');
+const display   = document.getElementById('display');
+const presetsEl = document.getElementById('presets');
+const customRow = document.getElementById('customRow');
+const customToggle = document.getElementById('customToggle');
+const customApply  = document.getElementById('customApply');
+const ch = document.getElementById('ch'), cm = document.getElementById('cm'), cs = document.getElementById('cs');
+
+let total = 25*60, remaining = total, running = false, endTime = 0, tickId = null, audioCtx = null;
+let currentSig = '', cellRefs = [];
+
+/* ── fading digit ── */
+function setDigit(cell, val){
+  if(!cell) return;
+  const on = cell.querySelector('.face.on');
+  if(on && on.textContent === String(val)) return;
+  const spare = cell.querySelector('.face.off');
+  if(!spare) return;
+  spare.textContent = val;
+  // fade out current, fade in new
+  on.classList.remove('on');
+  on.classList.add('off');
+  spare.classList.remove('off');
+  spare.classList.add('on');
+}
+
+/* ── token-based display ── */
+function pushDigits(arr,n,width){ for(const c of String(n).padStart(width,'0')) arr.push({type:'digit',value:c}); }
+function tokensFor(sec){
+  const showH = total >= 3600, toks = [];
+  if(showH){
+    pushDigits(toks, Math.floor(sec/3600), 2); toks.push({type:'colon'});
+    pushDigits(toks, Math.floor((sec%3600)/60), 2); toks.push({type:'colon'});
+    pushDigits(toks, sec%60, 2);
+  } else {
+    pushDigits(toks, Math.floor(sec/60), 2); toks.push({type:'colon'});
+    pushDigits(toks, sec%60, 2);
+  }
+  return toks;
+}
+function rebuild(tokens){
+  display.innerHTML=''; cellRefs=[];
+  tokens.forEach(t=>{
+    if(t.type==='colon'){
+      const c=document.createElement('div'); c.className='colon'; c.textContent=':';
+      display.appendChild(c); cellRefs.push(null);
+    } else {
+      const cell=document.createElement('div'); cell.className='cell';
+      cell.innerHTML='<span class="face on">'+t.value+'</span><span class="face off">0</span>';
+      display.appendChild(cell); cellRefs.push(cell);
+    }
+  });
+}
+function fmtTitle(sec){
+  const p=n=>String(n).padStart(2,'0');
+  return total>=3600
+    ? `${p(Math.floor(sec/3600))}:${p(Math.floor((sec%3600)/60))}:${p(sec%60)}`
+    : `${p(Math.floor(sec/60))}:${p(sec%60)}`;
+}
+
+function render(){
+  const tokens = tokensFor(remaining);
+  const sig = tokens.map(t=>t.type).join('');
+  if(sig !== currentSig){ rebuild(tokens); currentSig = sig; }
+  display.classList.toggle('has-hours', total>=3600);
+  tokens.forEach((t,i)=>{ if(t.type==='digit') setDigit(cellRefs[i], t.value); });
+  fill.style.width = (total ? (1-remaining/total)*100 : 0) + '%';
+  document.title = running ? fmtTitle(remaining)+' · Ember' : 'Ember — Countdown';
+}
+
+function setRunning(on){
+  running = on;
+  pane.classList.toggle('running', on);
+  startBtn.textContent = on ? 'Pause' : (remaining>0 && remaining<total ? 'Resume' : 'Start');
+}
+function start(){
+  if(remaining<=0) remaining = total;
+  endTime = Date.now() + remaining*1000;
+  setRunning(true); pane.classList.remove('done'); label.textContent='Countdown';
+  initAudio(); clearInterval(tickId); tickId=setInterval(tick,200); render();
+}
+function tick(){ remaining=Math.max(0,Math.ceil((endTime-Date.now())/1000)); render(); if(remaining<=0) complete(); }
+function pause(){ clearInterval(tickId); setRunning(false); }
+function reset(){ clearInterval(tickId); setRunning(false); remaining=total; pane.classList.remove('done'); label.textContent='Countdown'; render(); }
+function complete(){ clearInterval(tickId); setRunning(false); pane.classList.add('done'); pane.classList.remove('running');
+  label.textContent='Complete'; startBtn.textContent='Restart'; chime(); }
+
+function clearPresetActive(){ presetsEl.querySelectorAll('.preset').forEach(b=>b.classList.remove('active')); }
+function setMinutes(min){ min=Math.min(99,Math.max(1,min)); total=min*60;
+  if(!running){ remaining=total; pane.classList.remove('done'); render(); }
+  presetsEl.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active', +b.dataset.min===min)); }
+function setCustomSeconds(sec){ if(sec<=0) return;
+  if(running) pause();
+  total=sec; remaining=sec; pane.classList.remove('done'); clearPresetActive(); render(); }
+
+/* ── audio ── */
+function initAudio(){ if(!audioCtx){ const C=window.AudioContext||window.webkitAudioContext; if(C) audioCtx=new C(); } }
+function chime(){ if(!audioCtx) return; const t=audioCtx.currentTime;
+  [[523.25,0],[659.25,.16],[783.99,.32]].forEach(([f,off])=>{
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t+off);g.gain.linearRampToValueAtTime(.18,t+off+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,t+off+1.1);
+    o.connect(g).connect(audioCtx.destination);o.start(t+off);o.stop(t+off+1.2);
+  });}
+
+/* ── clock ── */
+const clockHM=document.getElementById('clockHM'),clockS=document.getElementById('clockS'),clockDate=document.getElementById('clockDate');
+function tickClock(){ const n=new Date();
+  clockHM.textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  clockS.textContent=String(n.getSeconds()).padStart(2,'0');
+  clockDate.textContent=n.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}); }
+tickClock(); setInterval(tickClock,1000);
+
+/* ── leaves ── */
+const leavesHost=document.getElementById('leaves');
+const LEAF='<svg viewBox="0 0 24 24" fill="COL"><path d="M21 3c-1 10-8 17-16 18-.5-1-.6-2-.5-3C5.5 9 12 4 21 3z"/><path d="M4.5 20.5C9 15 14 10 20 4" stroke="COL" stroke-width="1" fill="none" opacity=".6"/></svg>';
+const leafColors=['#8b9a7c','#6b7f5c','#a8b89a','#5a6d4a'];
+for(let i=0;i<6;i++){
+  const el=document.createElement('div'); el.className='leaf';
+  const size=14+Math.random()*16, col=leafColors[i%leafColors.length];
+  el.innerHTML=LEAF.replaceAll('COL',col);
+  el.style.left=Math.random()*96+'%';
+  el.style.setProperty('--size',size+'px');
+  el.style.setProperty('--d',(13+Math.random()*9)+'s');
+  el.style.setProperty('--s',(3+Math.random()*2)+'s');
+  el.style.setProperty('--delay',(-Math.random()*14)+'s');
+  el.style.setProperty('--o',(.35+Math.random()*.3).toFixed(2));
+  leavesHost.appendChild(el);
+}
+
+/* ── wiring ── */
+startBtn.addEventListener('click', ()=> running?pause():start());
+resetBtn.addEventListener('click', reset);
+presetsEl.addEventListener('click', e=>{ const b=e.target.closest('.preset'); if(!b) return;
+  if(running) pause(); setMinutes(+b.dataset.min); });
+
+customToggle.addEventListener('click', ()=>{ customRow.classList.toggle('open');
+  if(customRow.classList.contains('open')) ch.focus(); });
+customApply.addEventListener('click', ()=>{
+  const h=parseInt(ch.value)||0, m=parseInt(cm.value)||0, s=parseInt(cs.value)||0;
+  const secs=h*3600+m*60+s;
+  if(secs<=0){ return; }
+  setCustomSeconds(secs); customRow.classList.remove('open');
+});
+[ch,cm,cs].forEach(inp=>inp.addEventListener('keydown',e=>{ if(e.key==='Enter') customApply.click(); }));
+
+display.addEventListener('wheel', e=>{ if(running) return; e.preventDefault();
+  setMinutes(Math.round(total/60) + (e.deltaY<0?1:-1)); },{passive:false});
+
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); running?pause():start(); }
+  else if(e.key==='r'||e.key==='R'){ reset(); }
+  else if(e.key==='ArrowUp'){ if(!running) setMinutes(Math.round(total/60)+1); }
+  else if(e.key==='ArrowDown'){ if(!running) setMinutes(Math.round(total/60)-1); }
+});
+
+render();
+})();
+</script>
+</body>
+</html>
